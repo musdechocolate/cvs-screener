@@ -1,0 +1,29 @@
+[
+    {
+        "name": "Renata Voss",
+        "age": null,
+        "years_of_experience": 14,
+        "skills": [
+          "JIRA",
+          "Amazon Web Services (AWS)",
+          "Jenkins",
+          "TensorFlow",
+          "Spring Boot",
+          "Apache Hadoop",
+          "IDPS",
+          "React Native",
+          "Selenium",
+          "Oracle"
+        ],
+        "languages": [],
+        "education": [
+          {
+            "degree": "Bachelor of Science",
+            "institution": "California Institute of Technology",
+            "year": "2006 - 2010"
+          }
+        ],
+        "current_role": "Director of Software Engineering",
+        "location": "San Jose, CA"
+    }
+]
