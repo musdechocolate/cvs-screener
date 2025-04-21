@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 import os
@@ -10,6 +11,7 @@ import requests
 load_dotenv()
 
 app = Flask(__name__, static_folder='.')
+CORS(app)  # Enable CORS for all routes
 
 # Initialize Qdrant client
 # You can configure this with your Qdrant server details

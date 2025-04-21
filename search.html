@@ -42,6 +42,20 @@
         #searchButton:hover {
             background-color: #45a049;
         }
+        .filters-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .filter-select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            min-width: 150px;
+        }
         #results {
             margin-top: 20px;
         }
@@ -65,6 +79,20 @@
         <input type="text" id="searchInput" placeholder="Enter your search term...">
         <button id="searchButton">Search</button>
     </div>
+    <div class="filters-container">
+        <select id="locationFilter" class="filter-select">
+            <option value="">All Locations</option>
+        </select>
+        <select id="roleFilter" class="filter-select">
+            <option value="">All Roles</option>
+        </select>
+        <select id="experienceFilter" class="filter-select">
+            <option value="">All Experience Levels</option>
+        </select>
+        <select id="skillsFilter" class="filter-select">
+            <option value="">All Skills</option>
+        </select>
+    </div>
     <div class="loading" id="loading">Loading...</div>
     <div id="results"></div>
 
@@ -73,9 +101,86 @@
         const searchButton = document.getElementById('searchButton');
         const resultsDiv = document.getElementById('results');
         const loadingDiv = document.getElementById('loading');
+        const locationFilter = document.getElementById('locationFilter');
+        const roleFilter = document.getElementById('roleFilter');
+        const experienceFilter = document.getElementById('experienceFilter');
+        const skillsFilter = document.getElementById('skillsFilter');
+
+        // Store all results for filtering
+        let allResults = [];
 
         // Example API endpoint - replace with your actual API endpoint
         const API_URL = 'http://localhost:5000/api/search';
+
+        function updateFilterOptions(data) {
+            // Clear existing options except the first one
+            locationFilter.innerHTML = '<option value="">All Locations</option>';
+            roleFilter.innerHTML = '<option value="">All Roles</option>';
+            experienceFilter.innerHTML = '<option value="">All Experience Levels</option>';
+            skillsFilter.innerHTML = '<option value="">All Skills</option>';
+
+            // Collect unique values
+            const locations = new Set();
+            const roles = new Set();
+            const experiences = new Set();
+            const skills = new Set();
+
+            data.forEach(item => {
+                if (item.payload.metadata.location) locations.add(item.payload.metadata.location);
+                if (item.payload.metadata.current_role) roles.add(item.payload.metadata.current_role);
+                if (item.payload.metadata.years_of_experience) experiences.add(item.payload.metadata.years_of_experience);
+                if (item.payload.metadata.skills) {
+                    item.payload.metadata.skills.forEach(skill => skills.add(skill));
+                }
+            });
+
+            // Add options to dropdowns
+            locations.forEach(location => {
+                locationFilter.add(new Option(location, location));
+            });
+            roles.forEach(role => {
+                roleFilter.add(new Option(role, role));
+            });
+            experiences.forEach(exp => {
+                experienceFilter.add(new Option(exp, exp));
+            });
+            skills.forEach(skill => {
+                skillsFilter.add(new Option(skill, skill));
+            });
+        }
+
+        function filterResults(data) {
+            return data.filter(item => {
+                const locationMatch = !locationFilter.value || item.payload.metadata.location === locationFilter.value;
+                const roleMatch = !roleFilter.value || item.payload.metadata.current_role === roleFilter.value;
+                const experienceMatch = !experienceFilter.value || item.payload.metadata.years_of_experience === experienceFilter.value;
+                const skillsMatch = !skillsFilter.value || (item.payload.metadata.skills && item.payload.metadata.skills.includes(skillsFilter.value));
+                
+                return locationMatch && roleMatch && experienceMatch && skillsMatch;
+            });
+        }
+
+        function displayResults(data) {
+            resultsDiv.innerHTML = '';
+            if (data.length === 0) {
+                resultsDiv.innerHTML = '<p>No results found.</p>';
+                return;
+            }
+
+            data.forEach(item => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'result-item';
+                resultItem.innerHTML = `
+                    <h3>${item.payload.metadata.name || 'No information available'}</h3>
+                    <p>${item.payload.metadata.current_role || 'No description available'}</p>
+                    <p>${item.payload.metadata.location || 'No description available'}</p>
+                    <p>Years of Experience: ${item.payload.metadata.years_of_experience || 'No description available'}</p>
+                    <p><small>Score: ${item.score.toFixed(4)}</small></p>
+                    <p><small>Skills: ${item.payload.metadata.skills.join(', ') || 'No skills available'}</small></p>
+                `;
+                resultsDiv.appendChild(resultItem);
+            });
+        }
 
         async function performSearch(query) {
             try {
@@ -99,31 +204,13 @@
 
                 const responseData = await response.json();
                 
-                // Display results
                 if (responseData.status === 'error') {
                     throw new Error(responseData.message);
                 }
 
-                const data = responseData.data;
-                console.log(data);
-                if (data.length === 0) {
-                    resultsDiv.innerHTML = '<p>No results found.</p>';
-                    return;
-                }
-
-                data.forEach(item => {
-                    const resultItem = document.createElement('div');
-                    resultItem.className = 'result-item';
-                    resultItem.innerHTML = `
-                        <h3>${item.payload.metadata.name || 'No information available'}</h3>
-                        <p>${item.payload.metadata.current_role || 'No description available'}</p>
-                        <p>${item.payload.metadata.location || 'No description available'}</p>
-                        <p>Years of Experience: ${item.payload.metadata.years_of_experience || 'No description available'}</p>
-                        <p><small>Score: ${item.score.toFixed(4)}</small></p>
-                        <p><small>Skills: ${item.payload.metadata.skills.join(', ') || 'No skills available'}</small></p>
-                    `;
-                    resultsDiv.appendChild(resultItem);
-                });
+                allResults = responseData.data;
+                updateFilterOptions(allResults);
+                displayResults(allResults);
             } catch (error) {
                 resultsDiv.innerHTML = `<p>Error: ${error.message}</p>`;
             } finally {
@@ -146,6 +233,13 @@
                     performSearch(query);
                 }
             }
+        });
+
+        // Add filter change listeners
+        [locationFilter, roleFilter, experienceFilter, skillsFilter].forEach(filter => {
+            filter.addEventListener('change', () => {
+                displayResults(filterResults(allResults));
+            });
         });
     </script>
 </body>

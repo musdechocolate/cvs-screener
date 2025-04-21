@@ -170,7 +170,7 @@ class Indexer:
             self.qdrant_client.create_collection(
                 collection_name=self.collection_name,
                 vectors_config=models.VectorParams(
-                    size=1024,  # OpenAI embedding dimension
+                    size=int(os.getenv("EMBEDDING_DIMENSION")),
                     distance=models.Distance.COSINE
                 )
             )
