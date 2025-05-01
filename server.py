@@ -155,7 +155,7 @@ def _get_embeddings(text: str) -> List[float]:
     }
         
     response = requests.post(
-        f"{os.getenv("API_BASE_URL")}/embeddings",
+        f'{os.getenv("API_BASE_URL")}/embeddings',
         headers=headers,
         json=data
     )
